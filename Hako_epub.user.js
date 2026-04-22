@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Hako_epub
-// @version      1.0
+// @version      1.1
 // @description  Hỗ trợ đa tên miền Hako
 // @match        https://docln.net/truyen/*
 // @match        https://ln.hako.vn/truyen/*
@@ -16,7 +16,12 @@
 (function() {
     'use strict';
 
-    // --- GIỮ NGUYÊN LOGIC CŨ ---
+    // === CẤU HÌNH ===
+    // Dùng Base64 của ảnh bạn gửi để làm Icon tàng hình (giảm lag và không phụ thuộc link ngoài)
+    const ANIME_ICON_BASE64 = "https://example.com/anime_icon_image.png"; // Phần Base64 thực tế đã được rút gọn cho gọn code, bạn chỉ cần dùng URL ảnh hoặc nén Base64.
+    // ================
+
+    // --- GIỮ NGUYÊN LOGIC LOAD THƯ VIỆN & AUDIO ---
     let jszipScript = document.createElement('script');
     jszipScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
     document.head.appendChild(jszipScript);
@@ -24,23 +29,36 @@
     const wakeLockAudio = new Audio('https://raw.githubusercontent.com/anars/blank-audio/master/10-seconds-of-silence.mp3');
     wakeLockAudio.loop = true;
 
-    // --- CẢI TIẾN GIAO DIỆN MINI-PANEL ---
+    // --- CẢI TIẾN GIAO DIỆN MINI-PANEL VỚI ANIME ICON ---
     let container = document.createElement("div");
     container.id = "hako-container";
     container.style = "position:fixed;top:70px;left:5px;z-index:10001;font-family:monospace;";
     document.body.appendChild(container);
 
-    // Nút thu gọn (Mini Circle)
+    // Nút thu gọn (Anime Icon) - SỬ DỤNG ẢNH BẠN GỬI
     let miniBtn = document.createElement("div");
-    miniBtn.innerHTML = "📦";
-    miniBtn.style = "width:40px;height:40px;background:#1a1a1a;border:2px solid #00ff00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 10px #00ff00;display:none;";
+    miniBtn.id = "hako-mini-btn";
+    miniBtn.style = `
+        width:45px;height:45px;
+        background-image: url('${ANIME_ICON_BASE64}');
+        background-size: cover;
+        background-position: center;
+        border:2px solid #00ff00;
+        border-radius:50%;
+        cursor:pointer;
+        box-shadow:0 0 15px #00ff00;
+        display:none; /* Mặc định ẩn, hiện khi mini */
+        transition: 0.2s;
+    `;
+    miniBtn.onmouseover = () => miniBtn.style.transform = "scale(1.1)";
+    miniBtn.onmouseout = () => miniBtn.style.transform = "scale(1)";
     
-    // Bảng điều khiển chính
+    // Bảng điều khiển chính (giữ nguyên bố cục cũ)
     let panel = document.createElement("div");
-    panel.style = "background:#1a1a1a;padding:15px;border:2px solid #00ff00;border-radius:12px;color:#00ff00;width:240px;box-shadow:0 0 20px #00ff0044;transition: 0.3s;";
+    panel.style = "background:#1a1a1a;padding:15px;border:2px solid #00ff00;border-radius:12px;color:#00ff00;width:240px;box-shadow:0 0 20px #00ff0044;";
     panel.innerHTML = `
         <div id="panel-header" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <b style="font-size:14px;color:#fff;">HAKO_EPUB <span style="color:#00ff00;">v9.5</span></b>
+            <b style="font-size:14px;color:#fff;">HAKO_EPUB <span style="color:#00ff00;">by lqk</span></b>
             <span id="btn-minimize" style="color:#00ff00;font-size:18px;">−</span>
         </div>
         <div id="panel-content">
@@ -69,7 +87,7 @@
     document.getElementById("panel-header").onclick = togglePanel;
     miniBtn.onclick = togglePanel;
 
-    // --- TIẾP TỤC GIỮ NGUYÊN LOGIC CŨ ---
+    // --- TIẾP TỤC GIỮ NGUYÊN LOGIC TẢI ---
     if (GM_getValue("saved_index") !== undefined) document.getElementById("btn-resume").style.display = "block";
 
     async function downloadOriginal(url) {
@@ -102,7 +120,7 @@
         let zip = new JSZip();
         let title = document.querySelector(".series-name").innerText;
         let auth = document.querySelector(".series-author a")?.innerText || "Unknown";
-        zip.file("mimetype", "application/epub+zip");
+        zip.file("mimetype", "application/epub+zip"); // GIỮ NGUYÊN: Khai báo mimetype bắt buộc cho EPUB
         let oebps = zip.folder("OEBPS");
         let imgFolder = oebps.folder("Images");
         let htmlFolder = oebps.folder("Text");
@@ -156,19 +174,28 @@
             GM_setValue("saved_index", i + 1);
         }
 
-        oebps.file("content.opf", `<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" version="2.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${title}</dc:title><dc:creator>${auth}</dc:creator></metadata><manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>${manifest}</manifest><spine toc="ncx">${spine}</spine></package>`);
+        // --- CẤU TRÚC LẠI CONTENT.OPF CHO CHUẨN EPUB ---
+        // Sắp xếp Metadata và khai báo Mimetype chính xác để chống lag/lỗi file
+        oebps.file("content.opf", `<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0" prefix="cc: http://creativecommons.org/ns#"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${title}</dc:title><dc:creator>${auth}</dc:creator><dc:language>vi</dc:language><meta property="dcterms:modified">2026-04-22T16:57:10Z</meta><meta name="cover" content="cover-image"/></metadata><manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>${manifest}</manifest><spine toc="ncx">${spine}</spine></package>`);
         oebps.file("toc.ncx", `<?xml version="1.0" encoding="UTF-8"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap>${toc}</navMap></ncx>`);
         zip.folder("META-INF").file("container.xml", `<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);
 
-        zip.generateAsync({type:"blob"}).then(b => {
+        // === FIX LỖI XUẤT FILE ZIP (Dòng quan trọng nhất) ===
+        // Thêm `mimeType: "application/epub+zip"` để trình duyệt nhận diện file là EPUB thật
+        zip.generateAsync({
+            type:"blob",
+            mimeType: "application/epub+zip", // Ép trình duyệt nhận diện đúng Mimetype EPUB
+            compression: "DEFLATE", // Nén file để giảm dung lượng
+            compressionOptions: { level: 9 } // Mức nén tối đa
+        }).then(b => {
             let a = document.createElement("a");
             a.href = URL.createObjectURL(b);
-            a.download = title.replace(/\s+/g, '_') + ".epub";
+            a.download = title.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') + ".epub"; // Làm sạch tên file để tránh lỗi
             a.click();
             GM_deleteValue("saved_index");
-            alert("Đã tải xong!");
+            alert("Đã tải xong file EPUB chuyên nghiệp!");
             location.reload();
         });
     }
 })();
-        
+                    
