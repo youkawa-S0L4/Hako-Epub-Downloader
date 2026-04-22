@@ -1,4 +1,4 @@
-# 📚 Hako Epub Downloader (v9.4)
+# 📚 Hako Epub Downloader (v1.0)
 
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Version](https://img.shields.io/badge/Version-9.4-blue.svg)
