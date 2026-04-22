@@ -4,7 +4,7 @@
 
 // @version      9.4
 
-// @description  Tăng thời gian chờ lên 30 giây, hỗ trợ đa tên miền Hako.
+// @description  hỗ trợ đa tên miền Hako.
 
 // @match        https://docln.net/truyen/*
 
