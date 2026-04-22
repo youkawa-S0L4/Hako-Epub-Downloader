@@ -16,10 +16,9 @@
 (function() {
     'use strict';
 
-    // === CẤU HÌNH ===
-    // Dùng Base64 của ảnh bạn gửi để làm Icon tàng hình (giảm lag và không phụ thuộc link ngoài)
-    const ANIME_ICON_BASE64 = "https://example.com/anime_icon_image.png"; // Phần Base64 thực tế đã được rút gọn cho gọn code, bạn chỉ cần dùng URL ảnh hoặc nén Base64.
-    // ================
+    // === CẤU HÌNH ICON MỚI ===
+    const ANIME_ICON_URL = "https://i.postimg.cc/DZFPcBmx/IMG-1772893272928-1772893274957.jpg";
+    // ========================
 
     // --- GIỮ NGUYÊN LOGIC LOAD THƯ VIỆN & AUDIO ---
     let jszipScript = document.createElement('script');
@@ -29,31 +28,31 @@
     const wakeLockAudio = new Audio('https://raw.githubusercontent.com/anars/blank-audio/master/10-seconds-of-silence.mp3');
     wakeLockAudio.loop = true;
 
-    // --- CẢI TIẾN GIAO DIỆN MINI-PANEL VỚI ANIME ICON ---
+    // --- CẢI TIẾN GIAO DIỆN MINI-PANEL VỚI ICON MỚI ---
     let container = document.createElement("div");
     container.id = "hako-container";
     container.style = "position:fixed;top:70px;left:5px;z-index:10001;font-family:monospace;";
     document.body.appendChild(container);
 
-    // Nút thu gọn (Anime Icon) - SỬ DỤNG ẢNH BẠN GỬI
+    // Nút thu gọn (Anime Icon)
     let miniBtn = document.createElement("div");
     miniBtn.id = "hako-mini-btn";
     miniBtn.style = `
         width:45px;height:45px;
-        background-image: url('${ANIME_ICON_BASE64}');
+        background-image: url('${ANIME_ICON_URL}');
         background-size: cover;
         background-position: center;
         border:2px solid #00ff00;
         border-radius:50%;
         cursor:pointer;
         box-shadow:0 0 15px #00ff00;
-        display:none; /* Mặc định ẩn, hiện khi mini */
+        display:none;
         transition: 0.2s;
     `;
     miniBtn.onmouseover = () => miniBtn.style.transform = "scale(1.1)";
     miniBtn.onmouseout = () => miniBtn.style.transform = "scale(1)";
     
-    // Bảng điều khiển chính (giữ nguyên bố cục cũ)
+    // Bảng điều khiển chính
     let panel = document.createElement("div");
     panel.style = "background:#1a1a1a;padding:15px;border:2px solid #00ff00;border-radius:12px;color:#00ff00;width:240px;box-shadow:0 0 20px #00ff0044;";
     panel.innerHTML = `
@@ -74,7 +73,6 @@
     container.appendChild(miniBtn);
     container.appendChild(panel);
 
-    // Xử lý ẩn/hiện (Minimize/Maximize)
     const togglePanel = () => {
         if (panel.style.display === "none") {
             panel.style.display = "block";
@@ -87,7 +85,7 @@
     document.getElementById("panel-header").onclick = togglePanel;
     miniBtn.onclick = togglePanel;
 
-    // --- TIẾP TỤC GIỮ NGUYÊN LOGIC TẢI ---
+    // --- LOGIC TẢI ---
     if (GM_getValue("saved_index") !== undefined) document.getElementById("btn-resume").style.display = "block";
 
     async function downloadOriginal(url) {
@@ -120,7 +118,7 @@
         let zip = new JSZip();
         let title = document.querySelector(".series-name").innerText;
         let auth = document.querySelector(".series-author a")?.innerText || "Unknown";
-        zip.file("mimetype", "application/epub+zip"); // GIỮ NGUYÊN: Khai báo mimetype bắt buộc cho EPUB
+        zip.file("mimetype", "application/epub+zip");
         let oebps = zip.folder("OEBPS");
         let imgFolder = oebps.folder("Images");
         let htmlFolder = oebps.folder("Text");
@@ -174,28 +172,24 @@
             GM_setValue("saved_index", i + 1);
         }
 
-        // --- CẤU TRÚC LẠI CONTENT.OPF CHO CHUẨN EPUB ---
-        // Sắp xếp Metadata và khai báo Mimetype chính xác để chống lag/lỗi file
-        oebps.file("content.opf", `<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0" prefix="cc: http://creativecommons.org/ns#"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${title}</dc:title><dc:creator>${auth}</dc:creator><dc:language>vi</dc:language><meta property="dcterms:modified">2026-04-22T16:57:10Z</meta><meta name="cover" content="cover-image"/></metadata><manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>${manifest}</manifest><spine toc="ncx">${spine}</spine></package>`);
+        oebps.file("content.opf", `<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${title}</dc:title><dc:creator>${auth}</dc:creator><dc:language>vi</dc:language></metadata><manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>${manifest}</manifest><spine toc="ncx">${spine}</spine></package>`);
         oebps.file("toc.ncx", `<?xml version="1.0" encoding="UTF-8"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><navMap>${toc}</navMap></ncx>`);
         zip.folder("META-INF").file("container.xml", `<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);
 
-        // === FIX LỖI XUẤT FILE ZIP (Dòng quan trọng nhất) ===
-        // Thêm `mimeType: "application/epub+zip"` để trình duyệt nhận diện file là EPUB thật
         zip.generateAsync({
             type:"blob",
-            mimeType: "application/epub+zip", // Ép trình duyệt nhận diện đúng Mimetype EPUB
-            compression: "DEFLATE", // Nén file để giảm dung lượng
-            compressionOptions: { level: 9 } // Mức nén tối đa
+            mimeType: "application/epub+zip",
+            compression: "DEFLATE",
+            compressionOptions: { level: 9 }
         }).then(b => {
             let a = document.createElement("a");
             a.href = URL.createObjectURL(b);
-            a.download = title.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') + ".epub"; // Làm sạch tên file để tránh lỗi
+            a.download = title.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') + ".epub";
             a.click();
             GM_deleteValue("saved_index");
-            alert("Đã tải xong file EPUB chuyên nghiệp!");
+            alert("Đã tải xong file EPUB!");
             location.reload();
         });
     }
 })();
-                    
+            
