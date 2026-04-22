@@ -17,7 +17,7 @@ Công cụ hỗ trợ tải truyện từ hệ thống **Hako** (docln.net, ln.h
 
 ### 💻 Trên Máy tính (PC/Laptop)
 1. Cài đặt tiện ích **[Tampermonkey](https://www.tampermonkey.net/)** (Chrome, Edge, Firefox...).
-2. Bấm vào [ĐÂY](link-raw-script-cua-ban-o-day) để cài đặt Script.
+2. Bấm vào [ĐÂY](https://raw.githubusercontent.com/youkawa-S0L4/Hako-Epub-Downloader/refs/heads/main/Hako_epub-9.4.user.js) để cài đặt Script.
 3. Bấm **Install** (Cài đặt) khi bảng điều khiển hiện ra.
 
 ### 📱 Trên Điện thoại (Android)
