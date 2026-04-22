@@ -1,7 +1,7 @@
 # 📚 Hako Epub Downloader (v1.1)
 
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Version](https://img.shields.io/badge/Version-9.4-blue.svg)
+![Version](https://img.shields.io/badge/Version-1.1-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-PC%20%7C%20Android%20%7C%20iOS-orange.svg)
 
 Công cụ hỗ trợ tải truyện từ hệ thống **Hako** (docln.net, ln.hako.vn, docln.sbs) chuyển đổi trực tiếp thành file **EPUB** chất lượng cao ngay trên trình duyệt.
